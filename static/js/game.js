@@ -30,6 +30,7 @@ class CrashGame {
         // Debounce & throttles
         this.isTransitioning = false;
         this.transitionCooldown = 0;
+        this.targetCoord = null;
         this.toastThrottles = {};
         this.interactionTarget = null;
 
@@ -257,15 +258,29 @@ class CrashGame {
     handleServerMessage(data) {
         if (data.type === "init") {
             this.mapLayout = data.map_layout || this.mapLayout;
+            if (data.trees) this.trees = data.trees;
+            if (data.ground_items) this.groundItems = data.ground_items;
+        } else if (data.type === "trees_update") {
+            if (data.coord && data.trees) {
+                this.trees[data.coord] = data.trees;
+            }
         } else if (data.type === "room_state") {
             if (data.map_layout) {
                 this.mapLayout = data.map_layout;
-            } else if (data.state && data.state.map_layout) {
-                this.mapLayout = data.state.map_layout;
             }
 
             const oldLocal = this.getLocalPlayer();
             const serverLocal = data.state.players ? data.state.players[this.playerId] : null;
+
+            // Protection against in-flight stale ticks after screen transition
+            if (this.targetCoord && serverLocal) {
+                if (serverLocal.coord[0] !== this.targetCoord[0] || serverLocal.coord[1] !== this.targetCoord[1]) {
+                    // Stale packet from previous room queued before server processed transition: skip position snapping
+                    return;
+                }
+                // Server caught up to new sector!
+                this.targetCoord = null;
+            }
 
             if (oldLocal && serverLocal) {
                 if (oldLocal.coord[0] !== serverLocal.coord[0] || oldLocal.coord[1] !== serverLocal.coord[1]) {
@@ -284,10 +299,14 @@ class CrashGame {
             }
 
             this.gameState = data.state;
-            this.rabbits = data.rabbits || {};
-            this.groundItems = data.ground_items || {};
+            if (data.rabbits) {
+                Object.assign(this.rabbits, data.rabbits);
+            }
+            if (data.ground_items) {
+                Object.assign(this.groundItems, data.ground_items);
+            }
             if (data.trees) {
-                this.trees = data.trees;
+                Object.assign(this.trees, data.trees);
             }
 
             const p = this.getLocalPlayer();
@@ -315,6 +334,8 @@ class CrashGame {
             const p = this.getLocalPlayer();
 
             if (!res.success) {
+                this.targetCoord = null;
+                this.transitionCooldown = 0.8;
                 if (p) {
                     this.localPos.x = Math.max(55, Math.min(1045, this.localPos.x));
                     this.localPos.y = Math.max(55, Math.min(595, this.localPos.y));
@@ -323,6 +344,8 @@ class CrashGame {
                 }
                 this.showToast(res.message, 5000);
             } else {
+                this.targetCoord = res.coord;
+                this.transitionCooldown = 1.2;
                 if (res.new_x !== undefined && res.new_y !== undefined) {
                     this.localPos.x = res.new_x;
                     this.localPos.y = res.new_y;
@@ -331,6 +354,10 @@ class CrashGame {
                         p.y = res.new_y;
                         p.coord = res.coord;
                     }
+                }
+                if (res.coord_str) {
+                    if (res.ground_items) this.groundItems[res.coord_str] = res.ground_items;
+                    if (res.rabbits) this.rabbits[res.coord_str] = res.rabbits;
                 }
                 if (res.lost) {
                     this.showToast(res.message, 5000);

@@ -63,22 +63,21 @@ async def game_loop_ticker():
                 # Broadcast room tick if players connected
                 conns = active_connections.get(room_id, {})
                 if conns:
+                    # Gather active player coordinates to avoid sending inactive map sectors
+                    active_coords = {p.room_coord for p in room.players.values()}
+                    rabbits_data = {
+                        f"{c[0]}_{c[1]}": [r.to_dict() for r in room.rabbits.get(c, [])]
+                        for c in active_coords
+                    }
+                    ground_data = {
+                        f"{c[0]}_{c[1]}": room.ground_items.get(c, [])
+                        for c in active_coords
+                    }
                     state_msg = json.dumps({
                         "type": "room_state",
-                        "map_layout": room.get_layout_data(),
                         "state": room.to_dict(),
-                        "rabbits": {
-                            f"{c[0]}_{c[1]}": [r.to_dict() for r in r_list]
-                            for c, r_list in room.rabbits.items()
-                        },
-                        "ground_items": {
-                            f"{c[0]}_{c[1]}": g_list
-                            for c, g_list in room.ground_items.items()
-                        },
-                        "trees": {
-                            f"{c[0]}_{c[1]}": t_list
-                            for c, t_list in room.trees.items()
-                        }
+                        "rabbits": rabbits_data,
+                        "ground_items": ground_data
                     })
                     for ws in list(conns.values()):
                         try:
@@ -250,12 +249,22 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
         active_connections[room_id] = {}
     active_connections[room_id][player_id] = websocket
 
-    # Send room-specific procedural layout
+    # Send room-specific procedural layout, trees, and ground items once on init
     layout_data = room.get_layout_data()
+    trees_data = {
+        f"{c[0]}_{c[1]}": t_list
+        for c, t_list in room.trees.items()
+    }
+    ground_data = {
+        f"{c[0]}_{c[1]}": g_list
+        for c, g_list in room.ground_items.items()
+    }
     await websocket.send_text(json.dumps({
         "type": "init",
         "player_id": player_id,
-        "map_layout": layout_data
+        "map_layout": layout_data,
+        "trees": trees_data,
+        "ground_items": ground_data
     }))
 
     try:
@@ -271,6 +280,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
             elif action_type == "change_screen":
                 direction = data.get("direction")
                 res = room.change_screen(player, direction)
+                if res.get("success"):
+                    target_coord = tuple(res["coord"])
+                    coord_str = f"{target_coord[0]}_{target_coord[1]}"
+                    res["ground_items"] = room.ground_items.get(target_coord, [])
+                    res["rabbits"] = [
+                        r.to_dict() for r in room.rabbits.get(target_coord, [])
+                    ]
+                    res["coord_str"] = coord_str
                 await send_res(websocket, "change_screen", res)
 
             elif action_type == "search_wreckage":
@@ -286,6 +303,19 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
                 tree_id = data.get("tree_id")
                 res = room.chop_tree(player, tree_id)
                 await send_res(websocket, "chop_tree", res)
+                if res.get("success"):
+                    coord = player.room_coord
+                    coord_str = f"{coord[0]}_{coord[1]}"
+                    trees_msg = json.dumps({
+                        "type": "trees_update",
+                        "coord": coord_str,
+                        "trees": room.trees.get(coord, [])
+                    })
+                    for p_ws in active_connections.get(room_id, {}).values():
+                        try:
+                            await p_ws.send_text(trees_msg)
+                        except Exception:
+                            pass
 
             elif action_type == "pickup_ground_item":
                 item_id = data.get("item_id")

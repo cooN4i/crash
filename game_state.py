@@ -588,15 +588,21 @@ class GameRoom:
         player.previous_coord = curr
         player.room_coord = target_coord
 
-        # Position player on entering opposite edge
+        # Position player on entering opposite edge, safely inside the pathway
+        gate_center_x = 550.0
+        gate_center_y = 325.0
         if direction == "north":
-            player.y = 580.0
+            player.y = 540.0
+            player.x = max(490.0, min(610.0, player.x if player.x else gate_center_x))
         elif direction == "south":
-            player.y = 70.0
+            player.y = 110.0
+            player.x = max(490.0, min(610.0, player.x if player.x else gate_center_x))
         elif direction == "east":
-            player.x = 70.0
+            player.x = 110.0
+            player.y = max(270.0, min(380.0, player.y if player.y else gate_center_y))
         elif direction == "west":
-            player.x = 1030.0
+            player.x = 990.0
+            player.y = max(270.0, min(380.0, player.y if player.y else gate_center_y))
 
         room_name = self.map_layout[target_coord]["name"]
         if lost:
@@ -1348,6 +1354,5 @@ class GameRoom:
             "radio_rescue_day": self.radio_rescue_day,
             "radio_helicopter_landed": self.radio_helicopter_landed,
             "players": {pid: p.to_dict() for pid, p in self.players.items()},
-            "night_event": self.night_event,
-            "map_layout": self.get_layout_data()
+            "night_event": self.night_event
         }
