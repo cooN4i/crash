@@ -2,10 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Крушение (Crash) — Выживание в тайге</title>
     <meta name="description" content="Многопользовательская браузерная 2D survival игра с видом сверху в заснеженном лесу после авиакатастрофы.">
-    <link rel="stylesheet" href="/static/style.css?v=20260920_3">
+    <link rel="stylesheet" href="/static/style.css?v=20260920_4">
 </head>
 <body>
     <div id="game-container">
@@ -16,35 +16,35 @@
             <div class="stat-bars">
                 <!-- Health -->
                 <div class="stat-box glass-panel">
-                    <span class="stat-label">❤️ HP</span>
+                    <span class="stat-label">❤️<span class="stat-label-text"> HP</span></span>
                     <div class="bar-container">
                         <div id="health-bar" class="bar-fill health-fill" style="width: 100%;"></div>
                     </div>
                 </div>
                 <!-- Warmth -->
                 <div class="stat-box glass-panel">
-                    <span class="stat-label">🔥 Тепло</span>
+                    <span class="stat-label">🔥<span class="stat-label-text"> Тепло</span></span>
                     <div class="bar-container">
                         <div id="warmth-bar" class="bar-fill warmth-fill" style="width: 100%;"></div>
                     </div>
                 </div>
                 <!-- Hunger -->
                 <div class="stat-box glass-panel">
-                    <span class="stat-label">🍞 Сытость</span>
+                    <span class="stat-label">🍞<span class="stat-label-text"> Сытость</span></span>
                     <div class="bar-container">
                         <div id="hunger-bar" class="bar-fill hunger-fill" style="width: 100%;"></div>
                     </div>
                 </div>
                 <!-- Thirst -->
                 <div class="stat-box glass-panel">
-                    <span class="stat-label">💧 Жажда</span>
+                    <span class="stat-label">💧<span class="stat-label-text"> Жажда</span></span>
                     <div class="bar-container">
                         <div id="thirst-bar" class="bar-fill thirst-fill" style="width: 100%;"></div>
                     </div>
                 </div>
                 <!-- Stamina -->
                 <div class="stat-box glass-panel stamina-box" id="stamina-stat-box" title="Энергия на день (3 единицы, восстанавливается сном)">
-                    <span class="stat-label">⚡ Энергия</span>
+                    <span class="stat-label">⚡<span class="stat-label-text"> Энергия</span></span>
                     <div id="stamina-pips-container" style="display: flex; gap: 3px; align-items: center;">
                         <span class="stamina-pip active" id="stamina-pip-0">⚡</span>
                         <span class="stamina-pip active" id="stamina-pip-1">⚡</span>
@@ -226,9 +226,9 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/audio.js?v=20260920_3"></script>
-    <script src="/static/js/joystick.js?v=20260920_3"></script>
-    <script src="/static/js/renderer.js?v=20260920_3"></script>
-    <script src="/static/js/game.js?v=20260920_3"></script>
+    <script src="/static/js/audio.js?v=20260920_4"></script>
+    <script src="/static/js/joystick.js?v=20260920_4"></script>
+    <script src="/static/js/renderer.js?v=20260920_4"></script>
+    <script src="/static/js/game.js?v=20260920_4"></script>
 </body>
 </html>

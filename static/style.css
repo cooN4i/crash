@@ -32,7 +32,8 @@ body, html {
 
 #game-container {
     position: relative;
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
     height: 100%;
     height: 100dvh;
     display: flex;
@@ -365,7 +366,8 @@ body, html {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
     height: 100%;
     height: 100dvh;
     background: rgba(6, 11, 20, 0.88);
@@ -382,7 +384,7 @@ body, html {
 
 .modal-content {
     width: 480px;
-    max-width: 94vw;
+    max-width: 94%;
     max-height: 92dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -631,36 +633,50 @@ body, html {
 
 /* MOBILE LANDSCAPE & COMPACT SCREEN OPTIMIZATIONS */
 @media (max-height: 560px), (max-width: 950px) {
+    #gameCanvas {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
     #hud-top {
-        top: 6px;
-        left: 8px;
-        right: 8px;
+        top: calc(6px + env(safe-area-inset-top, 0px));
+        left: calc(10px + env(safe-area-inset-left, 0px));
+        right: calc(10px + env(safe-area-inset-right, 0px));
+        flex-wrap: nowrap;
     }
     .stat-bars {
-        gap: 6px;
+        gap: 4px;
     }
     .stat-box {
-        padding: 2px 7px;
-        gap: 4px;
+        padding: 2px 5px;
+        gap: 3px;
         min-width: auto;
         border-radius: 6px;
     }
     .stat-label {
-        font-size: 10px;
+        font-size: 11px;
+    }
+    .stat-label-text {
+        display: none !important;
     }
     .bar-container {
-        width: 42px;
+        width: 34px;
         height: 7px;
     }
     .stamina-pip {
         font-size: 11px;
     }
+    #stamina-pips-container {
+        display: none !important;
+    }
     #stamina-text {
-        font-size: 10px !important;
+        font-size: 11px !important;
+        margin-left: 1px;
     }
     .world-info {
-        padding: 2px 8px;
-        gap: 6px;
+        padding: 2px 7px;
+        gap: 5px;
         border-radius: 6px;
     }
     .day-badge {
@@ -668,12 +684,12 @@ body, html {
     }
     .room-badge {
         font-size: 10px;
-        padding: 2px 6px;
+        padding: 2px 5px;
     }
 
     /* INVENTORY */
     #hud-bottom {
-        bottom: 6px;
+        bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         padding: 4px 8px;
         gap: 6px;
         background: rgba(15, 23, 42, 0.75);
@@ -706,22 +722,24 @@ body, html {
         display: block !important;
     }
     #joystick-zone {
-        bottom: 8px;
-        left: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        left: calc(12px + env(safe-area-inset-left, 0px));
         width: 120px;
         height: 120px;
     }
     #action-buttons {
-        bottom: 8px;
-        right: 8px;
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        right: calc(16px + env(safe-area-inset-right, 0px));
         display: grid;
         grid-template-columns: repeat(2, 48px);
-        gap: 6px;
+        gap: 7px;
+        z-index: 50;
     }
     .action-btn {
         width: 48px;
         height: 48px;
         font-size: 8px;
+        -webkit-tap-highlight-color: transparent;
     }
     .action-btn span:first-child {
         font-size: 16px;
@@ -729,8 +747,8 @@ body, html {
 
     /* CHAT */
     #chat-container {
-        top: 38px;
-        left: 8px;
+        top: calc(36px + env(safe-area-inset-top, 0px));
+        left: calc(10px + env(safe-area-inset-left, 0px));
         bottom: auto;
     }
     #chat-messages {
@@ -748,7 +766,7 @@ body, html {
         bottom: 55px;
         left: 50%;
         transform: translateX(-50%);
-        width: 90vw;
+        width: 90%;
         max-width: 440px;
         z-index: 1000;
     }
@@ -756,7 +774,7 @@ body, html {
     /* MODALS */
     .modal-content {
         padding: 12px 18px;
-        max-width: 92vw;
+        max-width: 92%;
         max-height: 94dvh;
     }
     .modal-title {

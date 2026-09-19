@@ -125,35 +125,35 @@ class CrashGame {
             btnSendChat.addEventListener("click", () => this.sendChatMessage());
         }
 
-        // Touch buttons
-        const btnTouchAttack = document.getElementById("btn-touch-attack");
-        if (btnTouchAttack) {
-            btnTouchAttack.addEventListener("click", () => this.triggerAttack());
-        }
-        const btnTouchInteract = document.getElementById("btn-touch-interact");
-        if (btnTouchInteract) {
-            btnTouchInteract.addEventListener("click", () => this.triggerInteraction());
-        }
-        const btnTouchCook = document.getElementById("btn-touch-cook");
-        if (btnTouchCook) {
-            btnTouchCook.addEventListener("click", () => {
-                const p = this.getLocalPlayer();
-                const hasMeat = p && (p.inventory || []).some(i => i.id === "raw_meat");
-                if (hasMeat) {
-                    this.sendAction("cook_meat");
-                } else {
-                    this.sendAction("melt_snow");
-                }
+        // Fast touch bindings (instant tap response on mobile, fallback for click)
+        const bindFastTouch = (elem, cb) => {
+            if (!elem) return;
+            let lastTouch = 0;
+            elem.addEventListener("touchstart", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                lastTouch = Date.now();
+                cb();
+            }, { passive: false });
+            elem.addEventListener("click", () => {
+                if (Date.now() - lastTouch < 450) return;
+                cb();
             });
-        }
-        const btnTouchChest = document.getElementById("btn-touch-chest");
-        if (btnTouchChest) {
-            btnTouchChest.addEventListener("click", () => this.toggleChestModal());
-        }
-        const btnCloseChat = document.getElementById("btn-close-chat");
-        if (btnCloseChat) {
-            btnCloseChat.addEventListener("click", () => this.closeChat());
-        }
+        };
+
+        bindFastTouch(document.getElementById("btn-touch-attack"), () => this.triggerAttack());
+        bindFastTouch(document.getElementById("btn-touch-interact"), () => this.triggerInteraction());
+        bindFastTouch(document.getElementById("btn-touch-cook"), () => {
+            const p = this.getLocalPlayer();
+            const hasMeat = p && (p.inventory || []).some(i => i.id === "raw_meat");
+            if (hasMeat) {
+                this.sendAction("cook_meat");
+            } else {
+                this.sendAction("melt_snow");
+            }
+        });
+        bindFastTouch(document.getElementById("btn-touch-chest"), () => this.toggleChestModal());
+        bindFastTouch(document.getElementById("btn-close-chat"), () => this.closeChat());
 
         // Lobby buttons
         document.getElementById("btn-solo").addEventListener("click", () => this.createSingleplayer());
@@ -177,10 +177,10 @@ class CrashGame {
             document.getElementById("helicopter-actions").style.display = "none";
         });
 
-        // Inventory slots clicking
+        // Inventory slots fast tap
         const slots = document.querySelectorAll(".inventory-slot");
         slots.forEach(slot => {
-            slot.addEventListener("click", () => {
+            bindFastTouch(slot, () => {
                 const idx = parseInt(slot.getAttribute("data-slot"));
                 this.useSlotItem(idx);
             });
@@ -603,11 +603,51 @@ class CrashGame {
                 }
             }
 
-            // Screen boundary & solid wall collision
+            // Solid Obstacles Collision (Radio Tower & Shack, Landed Helicopter, Campfire)
             const effectiveMap = (this.mapLayout && Object.keys(this.mapLayout).length > 0)
                 ? this.mapLayout
                 : (this.gameState && this.gameState.map_layout ? this.gameState.map_layout : {});
             const roomInfo = effectiveMap[coordStr];
+            const roomType = roomInfo ? roomInfo.type : (coordStr === "0_0" ? "camp" : "forest");
+
+            const solidBoxes = [];
+            if (roomType === "radio_tower") {
+                // Radio Shack building (tx: 550, ty: 300, shack: tx-75..tx+75, ty+50..ty+135)
+                solidBoxes.push({ minX: 475, maxX: 625, minY: 350, maxY: 435 });
+                // Steel tower lattice mast (tx-35..tx+35, ty-140..ty+50)
+                solidBoxes.push({ minX: 515, maxX: 585, minY: 160, maxY: 350 });
+
+                if (this.gameState && this.gameState.radio_helicopter_landed) {
+                    solidBoxes.push({ minX: 220, maxX: 335, minY: 140, maxY: 195 });
+                }
+            } else if (roomType === "camp" && this.gameState && this.gameState.campfire_built && (this.gameState.fire_level || 0) > 0) {
+                // Campfire (center at 570, 360)
+                solidBoxes.push({ minX: 552, maxX: 588, minY: 345, maxY: 375 });
+            }
+
+            for (let box of solidBoxes) {
+                const cx = Math.max(box.minX, Math.min(box.maxX, nx));
+                const cy = Math.max(box.minY, Math.min(box.maxY, ny));
+                const dist = Math.hypot(nx - cx, ny - cy);
+                if (dist < playerRad) {
+                    if (dist > 0.001) {
+                        nx = cx + ((nx - cx) / dist) * playerRad;
+                        ny = cy + ((ny - cy) / dist) * playerRad;
+                    } else {
+                        const dLeft = Math.abs(nx - box.minX);
+                        const dRight = Math.abs(box.maxX - nx);
+                        const dTop = Math.abs(ny - box.minY);
+                        const dBottom = Math.abs(box.maxY - ny);
+                        const minD = Math.min(dLeft, dRight, dTop, dBottom);
+                        if (minD === dLeft) nx = box.minX - playerRad;
+                        else if (minD === dRight) nx = box.maxX + playerRad;
+                        else if (minD === dTop) ny = box.minY - playerRad;
+                        else ny = box.maxY + playerRad;
+                    }
+                }
+            }
+
+            // Screen boundary & solid wall collision
             const exitsList = (roomInfo && roomInfo.exits) ? roomInfo.exits : [];
 
             const wallThickness = 50;
@@ -820,7 +860,9 @@ class CrashGame {
                     return;
                 }
             }
-            if (Math.hypot(p.x - 550, p.y - 360) < 80) {
+            const distToDoor = Math.hypot(p.x - 550, p.y - 445);
+            const nearShack = (p.x >= 445 && p.x <= 655 && p.y >= 335 && p.y <= 495);
+            if (distToDoor < 85 || nearShack) {
                 if (!this.gameState.tower_breached) {
                     this.interactionTarget = { type: "breach_tower" };
                     hint.innerText = "[E] Срубить цепь топором и вскрыть дверь";
@@ -875,6 +917,20 @@ class CrashGame {
         p.attackTimer = 0.25; // Axe swing slash effect
 
         const coordStr = `${p.coord[0]}_${p.coord[1]}`;
+        const effectiveMap = (this.mapLayout && Object.keys(this.mapLayout).length > 0)
+            ? this.mapLayout
+            : (this.gameState && this.gameState.map_layout ? this.gameState.map_layout : {});
+        const roomInfo = effectiveMap[coordStr];
+        const roomType = roomInfo ? roomInfo.type : (coordStr === "0_0" ? "camp" : "forest");
+
+        // If player is in front of the chained radio tower shack, chopping attacks the chain!
+        if (roomType === "radio_tower" && !this.gameState.tower_breached) {
+            const distToDoor = Math.hypot(p.x - 550, p.y - 445);
+            if (distToDoor < 95) {
+                this.sendAction("breach_tower");
+                return;
+            }
+        }
 
         // 1. Check closest tree to chop with axe
         const tList = this.trees[coordStr] || [];
