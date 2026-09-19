@@ -41,9 +41,13 @@ class CrashGame {
     }
 
     initPlatformDetection() {
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.isMobile = isTouch || isMobileUA || window.innerWidth <= 1024 || window.innerHeight <= 600;
         if (this.isMobile) {
-            document.getElementById("mobile-controls").style.display = "block";
+            document.body.classList.add("is-mobile");
+            const mc = document.getElementById("mobile-controls");
+            if (mc) mc.style.display = "block";
         }
     }
 
@@ -122,15 +126,34 @@ class CrashGame {
         }
 
         // Touch buttons
-        document.getElementById("btn-touch-attack").addEventListener("click", () => {
-            this.triggerAttack();
-        });
-        document.getElementById("btn-touch-interact").addEventListener("click", () => {
-            this.triggerInteraction();
-        });
-        document.getElementById("btn-touch-chest").addEventListener("click", () => {
-            this.toggleChestModal();
-        });
+        const btnTouchAttack = document.getElementById("btn-touch-attack");
+        if (btnTouchAttack) {
+            btnTouchAttack.addEventListener("click", () => this.triggerAttack());
+        }
+        const btnTouchInteract = document.getElementById("btn-touch-interact");
+        if (btnTouchInteract) {
+            btnTouchInteract.addEventListener("click", () => this.triggerInteraction());
+        }
+        const btnTouchCook = document.getElementById("btn-touch-cook");
+        if (btnTouchCook) {
+            btnTouchCook.addEventListener("click", () => {
+                const p = this.getLocalPlayer();
+                const hasMeat = p && (p.inventory || []).some(i => i.id === "raw_meat");
+                if (hasMeat) {
+                    this.sendAction("cook_meat");
+                } else {
+                    this.sendAction("melt_snow");
+                }
+            });
+        }
+        const btnTouchChest = document.getElementById("btn-touch-chest");
+        if (btnTouchChest) {
+            btnTouchChest.addEventListener("click", () => this.toggleChestModal());
+        }
+        const btnCloseChat = document.getElementById("btn-close-chat");
+        if (btnCloseChat) {
+            btnCloseChat.addEventListener("click", () => this.closeChat());
+        }
 
         // Lobby buttons
         document.getElementById("btn-solo").addEventListener("click", () => this.createSingleplayer());
@@ -243,15 +266,38 @@ class CrashGame {
 
         this.ws.onopen = () => {
             document.getElementById("room-code-tag").innerText = `ID: ${this.roomId}`;
+            if (this.isReconnecting) {
+                this.isReconnecting = false;
+                this.showToast("✅ Связь с сервером восстановлена!", 2500);
+            }
+            if (this.pingInterval) clearInterval(this.pingInterval);
+            this.pingInterval = setInterval(() => {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: "ping" }));
+                }
+            }, 15000);
         };
 
         this.ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            if (data.type === "pong") return;
             this.handleServerMessage(data);
         };
 
         this.ws.onclose = () => {
-            this.showToast("Связь с сервером потеряна");
+            if (this.pingInterval) clearInterval(this.pingInterval);
+            // Automatic reconnection logic for VPN and mobile networks
+            if (this.roomId && this.playerId && (!this.gameState || !this.gameState.status || this.gameState.status === "active")) {
+                this.isReconnecting = true;
+                this.showToast("⏳ Переподключение к серверу...", 2000);
+                setTimeout(() => {
+                    if (this.roomId && this.playerId) {
+                        this.connectWebSocket();
+                    }
+                }, 1500);
+            } else {
+                this.showToast("Связь с сервером потеряна");
+            }
         };
     }
 
@@ -494,6 +540,19 @@ class CrashGame {
 
         if (this.transitionCooldown > 0) {
             this.transitionCooldown -= dt;
+        }
+
+        if (this.isTransitioning) {
+            this.transitionTimeout = (this.transitionTimeout || 0) + dt;
+            if (this.transitionTimeout > 2.0) {
+                // Failsafe: if packet dropped over VPN or delayed, unlock player
+                this.isTransitioning = false;
+                this.transitionTimeout = 0;
+                this.transitionCooldown = 0.8;
+            }
+            return;
+        } else {
+            this.transitionTimeout = 0;
         }
 
         let dx = 0;

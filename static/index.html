@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Крушение (Crash) — Выживание в тайге</title>
     <meta name="description" content="Многопользовательская браузерная 2D survival игра с видом сверху в заснеженном лесу после авиакатастрофы.">
-    <link rel="stylesheet" href="/static/style.css?v=20260920_2">
+    <link rel="stylesheet" href="/static/style.css?v=20260920_3">
 </head>
 <body>
     <div id="game-container">
@@ -89,17 +89,21 @@
         <div id="mobile-controls">
             <div id="joystick-zone"></div>
             <div id="action-buttons">
-                <button id="btn-touch-attack" class="action-btn btn-attack" title="Удар топором">
+                <button id="btn-touch-attack" class="action-btn btn-attack" title="Удар топором / Рубка / Охота">
                     <span>🪓</span>
                     <span>УДАР</span>
                 </button>
-                <button id="btn-touch-interact" class="action-btn btn-interact" title="Взаимодействие">
+                <button id="btn-touch-interact" class="action-btn btn-interact" title="Действие / Сон / Обыск / Радио">
                     <span>✋</span>
                     <span>ДЕЙСТВ</span>
                 </button>
-                <button id="btn-touch-chest" class="action-btn" title="Сундук / Багаж">
+                <button id="btn-touch-cook" class="action-btn btn-cook" title="Пожарить мясо [G] / Растопить снег [T]">
+                    <span>🍖</span>
+                    <span>ЕДА</span>
+                </button>
+                <button id="btn-touch-chest" class="action-btn btn-chest" title="Сундук / Багаж">
                     <span>📦</span>
-                    <span>СУНДУК</span>
+                    <span>ЗАПАСЫ</span>
                 </button>
             </div>
         </div>
@@ -108,8 +112,9 @@
         <div id="chat-container">
             <div id="chat-messages"></div>
             <div id="chat-input-row" style="display: none;">
-                <input type="text" id="chat-input" placeholder="Нажмите Enter для отправки..." maxlength="120" autocomplete="off">
+                <input type="text" id="chat-input" placeholder="Введите сообщение..." maxlength="120" autocomplete="off">
                 <button id="btn-send-chat">➤</button>
+                <button id="btn-close-chat" style="background: rgba(239, 68, 68, 0.3); border: 1px solid #ef4444; color: #fff; border-radius: 6px; padding: 0 10px; cursor: pointer;">✕</button>
             </div>
             <button id="btn-toggle-chat" class="btn-chat-toggle" title="Чат [Enter]">💬</button>
         </div>
@@ -221,9 +226,9 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/audio.js?v=20260920_2"></script>
-    <script src="/static/js/joystick.js?v=20260920_2"></script>
-    <script src="/static/js/renderer.js?v=20260920_2"></script>
-    <script src="/static/js/game.js?v=20260920_2"></script>
+    <script src="/static/js/audio.js?v=20260920_3"></script>
+    <script src="/static/js/joystick.js?v=20260920_3"></script>
+    <script src="/static/js/renderer.js?v=20260920_3"></script>
+    <script src="/static/js/game.js?v=20260920_3"></script>
 </body>
 </html>

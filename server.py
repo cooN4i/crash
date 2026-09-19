@@ -273,7 +273,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
             data = json.loads(raw_data)
             action_type = data.get("type")
 
-            if action_type == "move":
+            if action_type == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+
+            elif action_type == "move":
                 player.x = float(data.get("x", player.x))
                 player.y = float(data.get("y", player.y))
 

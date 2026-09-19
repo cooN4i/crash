@@ -27,7 +27,10 @@ class VirtualJoystick {
 
         this.baseEl.appendChild(this.stickEl);
         this.container.appendChild(this.baseEl);
-        this.baseEl.style.display = "none";
+        this.baseEl.style.left = "65px";
+        this.baseEl.style.top = "65px";
+        this.baseEl.style.opacity = "0.55";
+        this.baseEl.style.display = "block";
     }
 
     bindEvents() {
@@ -45,6 +48,7 @@ class VirtualJoystick {
 
             this.baseEl.style.left = `${this.baseX}px`;
             this.baseEl.style.top = `${this.baseY}px`;
+            this.baseEl.style.opacity = "1.0";
             this.baseEl.style.display = "block";
 
             this.stickX = 0;
@@ -116,7 +120,10 @@ class VirtualJoystick {
     reset() {
         this.active = false;
         this.touchId = null;
-        this.baseEl.style.display = "none";
+        this.baseEl.style.left = "65px";
+        this.baseEl.style.top = "65px";
+        this.baseEl.style.opacity = "0.55";
+        this.stickEl.style.transform = "translate(0px, 0px)";
         this.vector.x = 0;
         this.vector.y = 0;
         if (this.onChange) {

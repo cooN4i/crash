@@ -21,21 +21,25 @@
 body, html {
     width: 100%;
     height: 100%;
+    height: 100dvh;
     background-color: var(--bg-primary);
     color: var(--text-main);
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     overflow: hidden;
     touch-action: none;
+    -webkit-touch-callout: none;
 }
 
 #game-container {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100%;
+    height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
     background: radial-gradient(circle at center, #101c2c 0%, #06090e 100%);
+    overflow: hidden;
 }
 
 #gameCanvas {
@@ -261,27 +265,28 @@ body, html {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 15;
+    z-index: 20;
 }
 
 #joystick-zone {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 170px;
-    height: 170px;
+    bottom: 15px;
+    left: 15px;
+    width: 140px;
+    height: 140px;
     pointer-events: auto;
 }
 
 .joystick-base {
     position: absolute;
-    width: 110px;
-    height: 110px;
-    margin-left: -55px;
-    margin-top: -55px;
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
     border-radius: 50%;
-    background: rgba(30, 41, 59, 0.4);
-    border: 2px solid rgba(56, 189, 248, 0.4);
+    background: rgba(15, 23, 42, 0.6);
+    border: 2px solid rgba(56, 189, 248, 0.45);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
     pointer-events: none;
 }
 
@@ -289,34 +294,34 @@ body, html {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 50px;
-    height: 50px;
-    margin-left: -25px;
-    margin-top: -25px;
+    width: 44px;
+    height: 44px;
+    margin-left: -22px;
+    margin-top: -22px;
     border-radius: 50%;
     background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
 }
 
 #action-buttons {
     position: absolute;
-    bottom: 25px;
-    right: 25px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    bottom: 15px;
+    right: 15px;
+    display: grid;
+    grid-template-columns: repeat(2, 54px);
+    gap: 10px;
     pointer-events: auto;
 }
 
 .action-btn {
-    width: 66px;
-    height: 66px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     background: var(--bg-surface);
     border: 2px solid var(--border-ice);
     color: #fff;
     font-weight: bold;
-    font-size: 13px;
+    font-size: 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -324,39 +329,67 @@ body, html {
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     transition: transform 0.1s, background 0.2s;
+    touch-action: manipulation;
+}
+
+.action-btn span:first-child {
+    font-size: 18px;
+    line-height: 1.1;
 }
 
 .action-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.90);
 }
 
 .btn-attack {
     border-color: #ef4444;
-    background: rgba(220, 38, 38, 0.25);
+    background: rgba(220, 38, 38, 0.3);
 }
 
 .btn-interact {
     border-color: #38bdf8;
-    background: rgba(56, 189, 248, 0.25);
+    background: rgba(56, 189, 248, 0.3);
+}
+
+.btn-cook {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.3);
+}
+
+.btn-chest {
+    border-color: #94a3b8;
+    background: rgba(148, 163, 184, 0.3);
 }
 
 /* MODALS */
 .modal-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background: rgba(6, 11, 20, 0.85);
+    width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    background: rgba(6, 11, 20, 0.88);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 50;
+    z-index: 100;
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
     width: 480px;
-    max-width: 90vw;
-    padding: 30px;
+    max-width: 94vw;
+    max-height: 92dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 24px;
     text-align: center;
+    position: relative;
+    margin: auto;
 }
 
 .modal-title {
@@ -593,5 +626,154 @@ body, html {
 @media (max-width: 900px) and (orientation: portrait) {
     #rotate-device-overlay {
         display: flex !important;
+    }
+}
+
+/* MOBILE LANDSCAPE & COMPACT SCREEN OPTIMIZATIONS */
+@media (max-height: 560px), (max-width: 950px) {
+    #hud-top {
+        top: 6px;
+        left: 8px;
+        right: 8px;
+    }
+    .stat-bars {
+        gap: 6px;
+    }
+    .stat-box {
+        padding: 2px 7px;
+        gap: 4px;
+        min-width: auto;
+        border-radius: 6px;
+    }
+    .stat-label {
+        font-size: 10px;
+    }
+    .bar-container {
+        width: 42px;
+        height: 7px;
+    }
+    .stamina-pip {
+        font-size: 11px;
+    }
+    #stamina-text {
+        font-size: 10px !important;
+    }
+    .world-info {
+        padding: 2px 8px;
+        gap: 6px;
+        border-radius: 6px;
+    }
+    .day-badge {
+        font-size: 11px;
+    }
+    .room-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+
+    /* INVENTORY */
+    #hud-bottom {
+        bottom: 6px;
+        padding: 4px 8px;
+        gap: 6px;
+        background: rgba(15, 23, 42, 0.75);
+        border-radius: 8px;
+    }
+    .inventory-slot {
+        width: 38px;
+        height: 38px;
+        border-radius: 6px;
+    }
+    .slot-icon {
+        font-size: 17px;
+    }
+    .slot-hotkey {
+        display: none;
+    }
+    .slot-name {
+        display: none;
+    }
+
+    /* INTERACTION PROMPT */
+    #interaction-hint {
+        bottom: 50px;
+        font-size: 11px;
+        padding: 4px 12px;
+    }
+
+    /* TOUCH CONTROLS */
+    #mobile-controls {
+        display: block !important;
+    }
+    #joystick-zone {
+        bottom: 8px;
+        left: 8px;
+        width: 120px;
+        height: 120px;
+    }
+    #action-buttons {
+        bottom: 8px;
+        right: 8px;
+        display: grid;
+        grid-template-columns: repeat(2, 48px);
+        gap: 6px;
+    }
+    .action-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 8px;
+    }
+    .action-btn span:first-child {
+        font-size: 16px;
+    }
+
+    /* CHAT */
+    #chat-container {
+        top: 38px;
+        left: 8px;
+        bottom: auto;
+    }
+    #chat-messages {
+        max-width: 200px;
+        max-height: 70px;
+        font-size: 11px;
+    }
+    .btn-chat-toggle {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    #chat-input-row {
+        position: fixed;
+        bottom: 55px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90vw;
+        max-width: 440px;
+        z-index: 1000;
+    }
+
+    /* MODALS */
+    .modal-content {
+        padding: 12px 18px;
+        max-width: 92vw;
+        max-height: 94dvh;
+    }
+    .modal-title {
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+    .modal-desc {
+        font-size: 11px;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+    .input-field {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+    .btn-primary, .btn-secondary {
+        padding: 7px 12px;
+        font-size: 12px;
     }
 }
