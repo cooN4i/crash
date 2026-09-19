@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крушение (Crash) — Выживание в тайге</title>
+    <meta name="description" content="Многопользовательская браузерная 2D survival игра с видом сверху в заснеженном лесу после авиакатастрофы.">
+    <link rel="stylesheet" href="/static/style.css?v=20260920_1">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1100" height="650"></canvas>
+
+        <!-- TOP HUD -->
+        <div id="hud-top">
+            <div class="stat-bars">
+                <!-- Health -->
+                <div class="stat-box glass-panel">
+                    <span class="stat-label">❤️ HP</span>
+                    <div class="bar-container">
+                        <div id="health-bar" class="bar-fill health-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Warmth -->
+                <div class="stat-box glass-panel">
+                    <span class="stat-label">🔥 Тепло</span>
+                    <div class="bar-container">
+                        <div id="warmth-bar" class="bar-fill warmth-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Hunger -->
+                <div class="stat-box glass-panel">
+                    <span class="stat-label">🍞 Сытость</span>
+                    <div class="bar-container">
+                        <div id="hunger-bar" class="bar-fill hunger-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Thirst -->
+                <div class="stat-box glass-panel">
+                    <span class="stat-label">💧 Жажда</span>
+                    <div class="bar-container">
+                        <div id="thirst-bar" class="bar-fill thirst-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Stamina -->
+                <div class="stat-box glass-panel stamina-box" id="stamina-stat-box" title="Энергия на день (3 единицы, восстанавливается сном)">
+                    <span class="stat-label">⚡ Энергия</span>
+                    <div id="stamina-pips-container" style="display: flex; gap: 3px; align-items: center;">
+                        <span class="stamina-pip active" id="stamina-pip-0">⚡</span>
+                        <span class="stamina-pip active" id="stamina-pip-1">⚡</span>
+                        <span class="stamina-pip active" id="stamina-pip-2">⚡</span>
+                    </div>
+                    <span id="stamina-text" style="font-weight: bold; color: #fbbf24; font-size: 13px; margin-left: 2px;">3/3</span>
+                </div>
+            </div>
+
+            <div class="world-info glass-panel">
+                <span id="day-counter" class="day-badge">День 1</span>
+                <div id="fire-meter-box" class="fire-meter" style="display: none;">
+                    <span>Костёр:</span>
+                    <div id="fire-pips" style="display: flex; gap: 3px;">
+                        <div class="fire-pip active"></div>
+                        <div class="fire-pip active"></div>
+                        <div class="fire-pip active"></div>
+                        <div class="fire-pip"></div>
+                        <div class="fire-pip"></div>
+                    </div>
+                </div>
+                <div id="room-code-tag" class="room-badge" title="Кликните чтобы скопировать ID">ID: ------</div>
+            </div>
+        </div>
+
+        <!-- CONTEXT INTERACTION PROMPT -->
+        <div id="interaction-hint" class="glass-panel">Нажмите [E] для взаимодействия</div>
+
+        <!-- NOTIFICATION TOASTS -->
+        <div id="toast-container"></div>
+
+        <!-- BOTTOM HUD: INVENTORY -->
+        <div id="hud-bottom" class="glass-panel">
+            <div class="inventory-slot" data-slot="0"></div>
+            <div class="inventory-slot" data-slot="1"></div>
+            <div class="inventory-slot" data-slot="2"></div>
+            <div class="inventory-slot" data-slot="3"></div>
+            <div class="inventory-slot" data-slot="4"></div>
+        </div>
+
+        <!-- MOBILE ON-SCREEN CONTROLS -->
+        <div id="mobile-controls">
+            <div id="joystick-zone"></div>
+            <div id="action-buttons">
+                <button id="btn-touch-attack" class="action-btn btn-attack" title="Удар топором">
+                    <span>🪓</span>
+                    <span>УДАР</span>
+                </button>
+                <button id="btn-touch-interact" class="action-btn btn-interact" title="Взаимодействие">
+                    <span>✋</span>
+                    <span>ДЕЙСТВ</span>
+                </button>
+                <button id="btn-touch-chest" class="action-btn" title="Сундук / Багаж">
+                    <span>📦</span>
+                    <span>СУНДУК</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- IN-GAME CHAT -->
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-row" style="display: none;">
+                <input type="text" id="chat-input" placeholder="Нажмите Enter для отправки..." maxlength="120" autocomplete="off">
+                <button id="btn-send-chat">➤</button>
+            </div>
+            <button id="btn-toggle-chat" class="btn-chat-toggle" title="Чат [Enter]">💬</button>
+        </div>
+
+        <!-- DEVICE ROTATION PROMPT FOR MOBILE -->
+        <div id="rotate-device-overlay" class="modal-overlay" style="display: none; z-index: 100000;">
+            <div class="modal-content glass-panel" style="text-align: center; max-width: 320px;">
+                <div style="font-size: 52px; margin-bottom: 12px;">📱🔄</div>
+                <h2 class="modal-title" style="font-size: 20px;">ПЕРЕВЕРНИТЕ ТЕЛЕФОН</h2>
+                <p class="modal-desc" style="font-size: 14px; margin-bottom: 0;">
+                    Для игры в заснеженной тайге требуется горизонтальная ориентация экрана (Landscape).
+                </p>
+            </div>
+        </div>
+
+        <!-- LOBBY MODAL -->
+        <div id="lobby-modal" class="modal-overlay">
+            <div class="modal-content glass-panel">
+                <h1 class="modal-title">❄️ КРУШЕНИЕ ❄️</h1>
+                <p class="modal-desc">
+                    Самолет потерпел крушение в ледяной глуши. Выживите в суровом заснеженном лесу, защищайте костер, охотьтесь на зайцев и вызовите спасателей!
+                </p>
+
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="player-name-input" class="input-field" placeholder="Ваше имя" value="Выживший">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button id="btn-solo" class="btn-primary">🌲 Одиночная игра</button>
+                    <button id="btn-create-coop" class="btn-primary" style="background: linear-gradient(135deg, #059669, #10b981);">
+                        👥 Создать комнату (Кооператив 2 чел.)
+                    </button>
+                    
+                    <div style="margin-top: 10px; display: flex; gap: 8px;">
+                        <input type="text" id="join-room-input" class="input-field" placeholder="8-значный ID комнаты" style="margin-bottom: 0;">
+                        <button id="btn-join-coop" class="btn-secondary" style="white-space: nowrap;">Войти</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WAITING LOBBY MODAL -->
+        <div id="waiting-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content glass-panel">
+                <h2 class="modal-title">ОЖИДАНИЕ ВТОРОГО ИГРОКА</h2>
+                <p class="modal-desc">Сообщите напарнику 8-значный ID комнаты:</p>
+                <div id="display-room-id" style="font-size: 32px; font-weight: bold; color: var(--ice-cyan); letter-spacing: 4px; margin-bottom: 20px;">
+                    00000000
+                </div>
+                <button id="btn-copy-code" class="btn-secondary" style="margin-bottom: 15px;">📋 Скопировать код</button>
+                <p style="font-size: 12px; color: var(--text-muted);">Игра начнется автоматически, как только напарник подключится.</p>
+            </div>
+        </div>
+
+        <!-- CAMP CHEST MODAL -->
+        <div id="chest-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content glass-panel" style="width: 580px;">
+                <h2 class="modal-title">📦 Багаж лагеря</h2>
+                <p class="modal-desc">Общий сундук в хвостовой части самолета. Кликните по предмету, чтобы забрать в рюкзак или переложить.</p>
+                
+                <h4 style="text-align: left; margin-bottom: 8px; color: var(--ice-cyan);">В сундуке:</h4>
+                <div id="chest-items-grid" class="chest-grid"></div>
+
+                <h4 style="text-align: left; margin-bottom: 8px; color: var(--fire-orange);">В вашем рюкзаке:</h4>
+                <div id="backpack-items-grid" class="chest-grid"></div>
+
+                <button id="btn-close-chest" class="btn-secondary">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- NIGHT MODAL -->
+        <div id="night-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content glass-panel">
+                <h2 id="night-event-title" class="modal-title">🌙 НОЧЬ НАСТУПИЛА</h2>
+                <p id="night-event-desc" class="modal-desc">Вы согрелись у костра и отдохнули.</p>
+
+                <!-- Helicopter decision panel -->
+                <div id="helicopter-actions" style="display: none; margin-bottom: 20px;">
+                    <button id="btn-heli-flare" class="btn-primary" style="margin-bottom: 10px; width: 100%;">
+                        🚀 Выстрелить ракетницей (100% Спасение)
+                    </button>
+                    <button id="btn-heli-fire" class="btn-secondary" style="width: 100%;">
+                        🔥 Надеяться на свет костра (20% шанс)
+                    </button>
+                </div>
+
+                <button id="btn-wake-up" class="btn-primary">Встретить новый день ☀️</button>
+            </div>
+        </div>
+
+        <!-- VICTORY MODAL -->
+        <div id="victory-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content glass-panel">
+                <h1 class="modal-title" style="color: #10b981;">🎉 ВЫ СПАСЕНЫ! 🎉</h1>
+                <p id="victory-reason" class="modal-desc">Поисковая операция завершилась успехом!</p>
+                <div id="victory-stats" style="margin-bottom: 20px; font-size: 15px; color: var(--ice-cyan);"></div>
+                <button onclick="location.reload()" class="btn-primary">В главное меню</button>
+            </div>
+        </div>
+
+        <!-- GAME OVER MODAL -->
+        <div id="gameover-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content glass-panel">
+                <h1 class="modal-title" style="color: var(--health-red);">💀 ВЫ ПОГИБЛИ 💀</h1>
+                <p id="gameover-reason" class="modal-desc">Холод и дикая природа тайги оказались сильнее...</p>
+                <button onclick="location.reload()" class="btn-primary">Попробовать снова</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/audio.js?v=20260920_1"></script>
+    <script src="/static/js/joystick.js?v=20260920_1"></script>
+    <script src="/static/js/renderer.js?v=20260920_1"></script>
+    <script src="/static/js/game.js?v=20260920_1"></script>
+</body>
+</html>
