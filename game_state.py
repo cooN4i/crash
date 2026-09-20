@@ -1062,14 +1062,18 @@ class GameRoom:
                 "message": "Спать можно только внутри укрытия в лагере!"}
 
         p.ready_to_sleep = True
+        alive_players = [pl for pl in self.players.values() if pl.is_alive]
         all_ready = all(
-            player.ready_to_sleep for player in self.players.values())
+            player.ready_to_sleep for player in alive_players)
 
         if not all_ready:
             return {
                 "success": True,
                 "waiting": True,
-                "message": "Вы легли спать. Ожидание второго выжившего..."}
+                "player_id": player_id,
+                "name": p.name,
+                "message": f"{p.name} лёг спать в укрытии."
+            }
 
         # Both are ready -> run Night Phase!
         return self._run_night_phase()
@@ -1089,6 +1093,7 @@ class GameRoom:
                 "success": True,
                 "waiting": True,
                 "player_id": player_id,
+                "name": p.name,
                 "message": "Вы готовы встретить новый день. Ожидание напарника..."
             }
 

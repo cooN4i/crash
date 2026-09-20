@@ -410,56 +410,78 @@ class CrashGame {
             } else {
                 this.showToast(res.message, 2000);
             }
+        } else if (action === "sleep") {
+            if (res.night_passed) {
+                this.showNightModal(res);
+            } else if (res.waiting) {
+                if (res.player_id === this.playerId) {
+                    this.showToast("Вы легли спать. Ожидание второго выжившего...");
+                } else {
+                    this.showToast(`${res.name || "Напарник"} лёг спать в укрытии! Вернитесь в лагерь для сна.`, 4000);
+                }
+            } else if (res.message) {
+                this.showToast(res.message);
+            }
+        } else if (action === "wake_up") {
+            const wakeBtn = document.getElementById("btn-wake-up");
+            if (res.waiting) {
+                if (res.player_id === this.playerId) {
+                    // This player pressed wake up -> wait for teammate
+                    wakeBtn.disabled = true;
+                    wakeBtn.innerText = "⏳ Ожидание напарника...";
+                    this.showToast("Вы готовы встретить новый день. Ожидание напарника...");
+                } else {
+                    // The OTHER player pressed wake up -> this player must be able to click!
+                    wakeBtn.disabled = false;
+                    wakeBtn.innerText = "☀️ Проснуться (Напарник ждёт!)";
+                    this.showToast(`${res.name || "Напарник"} готов проснуться! Нажмите «Встретить новый день».`, 4000);
+                }
+            } else if (res.all_awake) {
+                wakeBtn.disabled = false;
+                wakeBtn.innerText = "Проснуться";
+                document.getElementById("night-modal").style.display = "none";
+                if (!this.gameState.night_helicopter_active) {
+                    this.renderer.isNightMode = false;
+                    this.sound.stopNightHelicopterSound();
+                }
+                this.showToast(res.message, 3000);
+            } else if (res.message) {
+                this.showToast(res.message);
+            }
+        } else if (action === "hit_rabbit") {
+            if (res.message) this.showToast(res.message);
+            if (res.success) this.sound.playAxe();
+        } else if (action === "repair_radio") {
+            if (res.message) this.showToast(res.message);
+            if (res.success) this.sound.playRadio();
+        } else if (action === "board_sos_helicopter") {
+            if (res.message) this.showToast(res.message);
+            if (res.won) this.sound.playWin();
+        } else if (action === "board_radio_helicopter") {
+            if (res.message) this.showToast(res.message);
+            if (res.won) this.sound.playWin();
+        } else if (action === "chat_message") {
+            this.addChatMessage(res);
+        } else if (action === "fire_flare_rocket") {
+            if (res.success) {
+                const p = this.getLocalPlayer();
+                this.renderer.launchFlareRocket(res.x || (p ? p.x : 550), res.y || (p ? p.y : 360));
+                this.sound.playFlareShot();
+                this.sound.startNightHelicopterSound();
+                this.showToast(res.message);
+                setTimeout(() => {
+                    this.sound.playSpotlightSweep();
+                }, 2000);
+                setTimeout(() => {
+                    this.sound.stopNightHelicopterSound();
+                    this.sound.playWin();
+                }, 3500);
+            } else {
+                this.showToast(res.message, 2500);
+            }
         } else {
             if (res.message) {
                 this.showToast(res.message);
-            }
-            if (action === "hit_rabbit" && res.success) {
-                this.sound.playAxe();
-            } else if (action === "sleep" && res.night_passed) {
-                this.showNightModal(res);
-            } else if (action === "repair_radio" && res.success) {
-                this.sound.playRadio();
-            } else if (action === "board_sos_helicopter" && res.won) {
-                this.sound.playWin();
-                this.showToast(res.message);
-            } else if (action === "board_radio_helicopter" && res.won) {
-                this.sound.playWin();
-                this.showToast(res.message);
-            } else if (action === "wake_up") {
-                const wakeBtn = document.getElementById("btn-wake-up");
-                if (res.waiting) {
-                    wakeBtn.disabled = true;
-                    wakeBtn.innerText = "⏳ Ожидание напарника...";
-                    this.showToast(res.message);
-                } else if (res.all_awake) {
-                    wakeBtn.disabled = false;
-                    document.getElementById("night-modal").style.display = "none";
-                    if (!this.gameState.night_helicopter_active) {
-                        this.renderer.isNightMode = false;
-                        this.sound.stopNightHelicopterSound();
-                    }
-                    this.showToast(res.message, 3000);
-                }
-            } else if (action === "chat_message") {
-                this.addChatMessage(res);
-            } else if (action === "fire_flare_rocket") {
-                if (res.success) {
-                    const p = this.getLocalPlayer();
-                    this.renderer.launchFlareRocket(res.x || (p ? p.x : 550), res.y || (p ? p.y : 360));
-                    this.sound.playFlareShot();
-                    this.sound.startNightHelicopterSound();
-                    this.showToast(res.message);
-                    setTimeout(() => {
-                        this.sound.playSpotlightSweep();
-                    }, 2000);
-                    setTimeout(() => {
-                        this.sound.stopNightHelicopterSound();
-                        this.sound.playWin();
-                    }, 3500);
-                } else {
-                    this.showToast(res.message, 2500);
-                }
             }
         }
     }
@@ -476,6 +498,7 @@ class CrashGame {
         heliActions.style.display = "none";
 
         const wakeBtn = document.getElementById("btn-wake-up");
+        wakeBtn.disabled = false;
         if (ev.type === "night_helicopter_active") {
             this.sound.startNightHelicopterSound();
             this.renderer.isNightMode = true;

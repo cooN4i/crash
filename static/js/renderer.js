@@ -583,6 +583,49 @@ class GameRenderer {
         ctx.restore();
     }
 
+    drawInteractiveBadge(ctx, x, y, w, h, icon, text, color, borderColor) {
+        ctx.save();
+
+        // 1. Sleek glass panel pill
+        ctx.fillStyle = "rgba(15, 23, 42, 0.93)";
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 6);
+        ctx.fill();
+
+        // 2. Glowing border
+        ctx.strokeStyle = borderColor || color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 3. System font for Cyrillic (Apple SF Pro on iOS, Segoe UI on Windows)
+        const font = "bold 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.font = font;
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+
+        const iconWidth = 16;
+        const gap = 6;
+        const totalContentWidth = iconWidth + gap + textWidth;
+        const startX = x + Math.round((w - totalContentWidth) / 2);
+        const centerY = Math.round(y + h / 2);
+
+        // 4. Draw Emoji Icon independently so it NEVER distorts Cyrillic text metrics
+        ctx.font = "13px 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(icon, startX + iconWidth / 2, centerY);
+
+        // 5. Draw Clean Cyrillic Text with true optical vertical centering
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        // -1px optical adjustment ensures capital Cyrillic letters are vertically dead-center
+        ctx.fillText(text, startX + iconWidth + gap, centerY - 1);
+
+        ctx.restore();
+    }
+
     drawCampSetPiece(ctx, gameState) {
         ctx.save();
 
@@ -598,46 +641,13 @@ class GameRenderer {
         }
 
         // Shelter / Sleep entrance (fuselage door)
-        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-        ctx.beginPath();
-        ctx.roundRect(165, 295, 150, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = "#38bdf8";
-        ctx.font = "bold 12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🛏️ УКРЫТИЕ (СОН)", 240, 311);
+        this.drawInteractiveBadge(ctx, 166, 297, 148, 28, "🛏️", "УКРЫТИЕ (СОН)", "#38bdf8", "rgba(56, 189, 248, 0.6)");
 
         // Suitcases for wreckage search
-        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-        ctx.beginPath();
-        ctx.roundRect(325, 280, 120, 30, 6);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(251, 191, 36, 0.5)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = "#fbbf24";
-        ctx.font = "bold 11px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🔍 ОБЫСК [E]", 385, 295);
+        this.drawInteractiveBadge(ctx, 326, 281, 118, 28, "🔍", "ОБЫСК [E]", "#fbbf24", "rgba(251, 191, 36, 0.6)");
 
         // Airplane Tail cargo hatch for shared supplies
-        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-        ctx.beginPath();
-        ctx.roundRect(455, 260, 120, 30, 6);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(52, 211, 153, 0.5)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = "#34d399";
-        ctx.font = "bold 11px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🧳 ЗАПАСЫ [E]", 515, 275);
+        this.drawInteractiveBadge(ctx, 456, 261, 118, 28, "🧳", "ЗАПАСЫ [E]", "#34d399", "rgba(52, 211, 153, 0.6)");
 
         // Windbreak shield if built
         if (gameState.has_windbreak) {
