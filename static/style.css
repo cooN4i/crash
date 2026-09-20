@@ -302,6 +302,8 @@ body, html {
     border-radius: 50%;
     background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
     box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+}
+
 #action-buttons {
     position: absolute;
     bottom: calc(14px + env(safe-area-inset-bottom, 0px));
