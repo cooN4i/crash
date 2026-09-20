@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Крушение (Crash) — Выживание в тайге</title>
     <meta name="description" content="Многопользовательская браузерная 2D survival игра с видом сверху в заснеженном лесу после авиакатастрофы.">
-    <link rel="stylesheet" href="/static/style.css?v=20260920_4">
+    <link rel="stylesheet" href="/static/style.css?v=20260920_5">
 </head>
 <body>
     <div id="game-container">
@@ -89,22 +89,26 @@
         <div id="mobile-controls">
             <div id="joystick-zone"></div>
             <div id="action-buttons">
-                <button id="btn-touch-attack" class="action-btn btn-attack" title="Удар топором / Рубка / Охота">
-                    <span>🪓</span>
-                    <span>УДАР</span>
-                </button>
-                <button id="btn-touch-interact" class="action-btn btn-interact" title="Действие / Сон / Обыск / Радио">
-                    <span>✋</span>
-                    <span>ДЕЙСТВ</span>
-                </button>
-                <button id="btn-touch-cook" class="action-btn btn-cook" title="Пожарить мясо [G] / Растопить снег [T]">
-                    <span>🍖</span>
-                    <span>ЕДА</span>
-                </button>
-                <button id="btn-touch-chest" class="action-btn btn-chest" title="Сундук / Багаж">
-                    <span>📦</span>
-                    <span>ЗАПАСЫ</span>
-                </button>
+                <div class="action-row" id="action-row-secondary" style="display: none;">
+                    <button id="btn-touch-cook" class="action-btn btn-cook" style="display: none;" title="Пожарить мясо">
+                        <span>🍖</span>
+                        <span>ЖАРИТЬ</span>
+                    </button>
+                    <button id="btn-touch-melt" class="action-btn btn-melt" style="display: none;" title="Растопить снег в воду">
+                        <span>💧</span>
+                        <span>ВОДА</span>
+                    </button>
+                </div>
+                <div class="action-row" id="action-row-main">
+                    <button id="btn-touch-interact" class="action-btn btn-interact" style="display: none;" title="Взаимодействие">
+                        <span id="touch-interact-icon">✋</span>
+                        <span id="touch-interact-label">ДЕЙСТВ</span>
+                    </button>
+                    <button id="btn-touch-attack" class="action-btn btn-attack" title="Удар топором / Рубка / Охота">
+                        <span>🪓</span>
+                        <span>УДАР</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -226,9 +230,9 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/audio.js?v=20260920_4"></script>
-    <script src="/static/js/joystick.js?v=20260920_4"></script>
-    <script src="/static/js/renderer.js?v=20260920_4"></script>
-    <script src="/static/js/game.js?v=20260920_4"></script>
+    <script src="/static/js/audio.js?v=20260920_5"></script>
+    <script src="/static/js/joystick.js?v=20260920_5"></script>
+    <script src="/static/js/renderer.js?v=20260920_5"></script>
+    <script src="/static/js/game.js?v=20260920_5"></script>
 </body>
 </html>

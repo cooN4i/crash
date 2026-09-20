@@ -598,30 +598,46 @@ class GameRenderer {
         }
 
         // Shelter / Sleep entrance (fuselage door)
-        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
         ctx.beginPath();
-        ctx.roundRect(175, 295, 135, 30, 6);
+        ctx.roundRect(165, 295, 150, 32, 6);
         ctx.fill();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.fillStyle = "#38bdf8";
         ctx.font = "bold 12px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🛏️ УКРЫТИЕ (СОН)", 242, 315);
+        ctx.textBaseline = "middle";
+        ctx.fillText("🛏️ УКРЫТИЕ (СОН)", 240, 311);
 
         // Suitcases for wreckage search
-        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
         ctx.beginPath();
         ctx.roundRect(325, 280, 120, 30, 6);
         ctx.fill();
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.fillStyle = "#fbbf24";
-        ctx.fillText("🔍 ОБЫСК [E]", 385, 300);
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🔍 ОБЫСК [E]", 385, 295);
 
         // Airplane Tail cargo hatch for shared supplies
-        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
         ctx.beginPath();
-        ctx.roundRect(430, 260, 125, 30, 6);
+        ctx.roundRect(455, 260, 120, 30, 6);
         ctx.fill();
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.fillStyle = "#34d399";
-        ctx.fillText("🧳 ЗАПАСЫ [E]", 492, 280);
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🧳 ЗАПАСЫ [E]", 515, 275);
 
         // Windbreak shield if built
         if (gameState.has_windbreak) {
@@ -1260,10 +1276,19 @@ class GameRenderer {
         ctx.fillText(`${curStam}/${maxStam}`, px + 22, py - 83);
 
         // Name tag & HP bar
-        ctx.fillStyle = isLocal ? "#38bdf8" : "#f1f5f9";
+        const nameText = player.name + (isLocal ? " (Вы)" : "");
         ctx.font = "bold 12px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(player.name + (isLocal ? " (ВЫ)" : ""), px, py - 66);
+        ctx.textBaseline = "alphabetic";
+
+        // Heavy dark outline so names are 100% readable against bright snow
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.lineWidth = 3.5;
+        ctx.strokeText(nameText, px, py - 66);
+
+        // Local player is bright cyan (#38bdf8), teammate is rich blue (#3b82f6)
+        ctx.fillStyle = isLocal ? "#38bdf8" : "#3b82f6";
+        ctx.fillText(nameText, px, py - 66);
 
         // HP bar
         const barW = 40;

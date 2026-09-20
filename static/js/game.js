@@ -143,16 +143,8 @@ class CrashGame {
 
         bindFastTouch(document.getElementById("btn-touch-attack"), () => this.triggerAttack());
         bindFastTouch(document.getElementById("btn-touch-interact"), () => this.triggerInteraction());
-        bindFastTouch(document.getElementById("btn-touch-cook"), () => {
-            const p = this.getLocalPlayer();
-            const hasMeat = p && (p.inventory || []).some(i => i.id === "raw_meat");
-            if (hasMeat) {
-                this.sendAction("cook_meat");
-            } else {
-                this.sendAction("melt_snow");
-            }
-        });
-        bindFastTouch(document.getElementById("btn-touch-chest"), () => this.toggleChestModal());
+        bindFastTouch(document.getElementById("btn-touch-melt"), () => this.sendAction("melt_snow"));
+        bindFastTouch(document.getElementById("btn-touch-cook"), () => this.sendAction("cook_meat"));
         bindFastTouch(document.getElementById("btn-close-chat"), () => this.closeChat());
 
         // Lobby buttons
@@ -755,145 +747,177 @@ class CrashGame {
         const p = this.getLocalPlayer();
         const hint = document.getElementById("interaction-hint");
         if (!p || !p.is_alive) {
-            hint.classList.remove("visible");
+            if (hint) hint.classList.remove("visible");
+            this.updateMobileActionButtons(null, false, false);
             return;
         }
 
         const coordStr = `${p.coord[0]}_${p.coord[1]}`;
-        const roomInfo = this.mapLayout[coordStr];
-        const roomType = roomInfo ? roomInfo.type : "forest";
+        const effectiveMap = (this.mapLayout && Object.keys(this.mapLayout).length > 0)
+            ? this.mapLayout
+            : (this.gameState && this.gameState.map_layout ? this.gameState.map_layout : {});
+        const roomInfo = effectiveMap[coordStr];
+        const roomType = roomInfo ? roomInfo.type : (coordStr === "0_0" ? "camp" : "forest");
+
         this.interactionTarget = null;
+        let hintText = null;
 
         // Base Camp
         if (roomType === "camp") {
             // Shelter / Sleep in airplane cabin
-            if (Math.hypot(p.x - 242, p.y - 315) < 70) {
-                this.interactionTarget = { type: "sleep" };
-                hint.innerText = "[E] Лечь спать в самолёт (Начать ночь)";
-                hint.classList.add("visible");
-                return;
+            if (Math.hypot(p.x - 240, p.y - 310) < 75) {
+                this.interactionTarget = { type: "sleep", label: "СПАТЬ", icon: "🛏️" };
+                hintText = "[E] Лечь спать в самолёт (Начать ночь)";
             }
             // Suitcases search in wreckage
-            if (Math.hypot(p.x - 385, p.y - 300) < 70) {
-                this.interactionTarget = { type: "search_wreckage" };
-                hint.innerText = "[E] Обыскать чемоданы (-1 энергия)";
-                hint.classList.add("visible");
-                return;
+            else if (Math.hypot(p.x - 385, p.y - 295) < 70) {
+                this.interactionTarget = { type: "search_wreckage", label: "ОБЫСК", icon: "🔍" };
+                hintText = "[E] Обыскать чемоданы (-1 энергия)";
             }
             // Airplane Tail section for shared supplies
-            if (Math.hypot(p.x - 492, p.y - 280) < 70) {
-                this.interactionTarget = { type: "open_chest" };
-                hint.innerText = "[E] Запасы самолёта (Багажный отсек)";
-                hint.classList.add("visible");
-                return;
+            else if (Math.hypot(p.x - 515, p.y - 275) < 70) {
+                this.interactionTarget = { type: "open_chest", label: "ЗАПАСЫ", icon: "🧳" };
+                hintText = "[E] Запасы самолёта (Багажный отсек)";
             }
-
-            // Campfire Lifecycle:
-            // 1. Not built: requires lighter & 2 wood in backpack
-            // 2. Extinguished: relight with lighter + 1 wood
-            // 3. Lit: add fuel / cook meat / [T] melt snow
-            if (Math.hypot(p.x - 570, p.y - 360) < 85) {
+            // Campfire Proximity
+            else if (Math.hypot(p.x - 570, p.y - 360) < 95) {
                 if (!this.gameState.campfire_built) {
                     const woodCount = (p.inventory || []).filter(i => i.id === "wood").reduce((acc, i) => acc + (i.count || 1), 0);
                     const hasLighter = (p.inventory || []).some(i => i.id === "lighter");
-                    this.interactionTarget = { type: "add_fuel" };
+                    this.interactionTarget = { type: "add_fuel", label: "КОСТЁР", icon: "🔥" };
                     if (hasLighter && woodCount >= 2) {
-                        hint.innerText = "[E] Разжечь костёр (Зажигалка + 2 бревна)";
+                        hintText = "[E] Разжечь костёр (Зажигалка + 2 бревна)";
                     } else if (hasLighter) {
-                        hint.innerText = `[E] Для костра нужно 2 дерева (${woodCount}/2 в рюкзаке)`;
+                        hintText = `[E] Для костра нужно 2 дерева (${woodCount}/2 в рюкзаке)`;
                     } else {
-                        hint.innerText = "[E] Для костра нужна зажигалка в рюкзаке!";
+                        hintText = "[E] Для костра нужна зажигалка в рюкзаке!";
                     }
-                    hint.classList.add("visible");
-                    return;
                 } else {
                     const fireLevel = this.gameState.fire_level || 0;
                     if (fireLevel === 0) {
-                        this.interactionTarget = { type: "add_fuel" };
-                        hint.innerText = "[E] Разжечь потухший костёр (зажигалка + 1 дерево)";
+                        this.interactionTarget = { type: "add_fuel", label: "КОСТЁР", icon: "🔥" };
+                        hintText = "[E] Разжечь потухший костёр (зажигалка + 1 дерево)";
                     } else {
-                        const hasMeat = p.inventory.some(i => i.id === "raw_meat");
-                        this.interactionTarget = { type: "add_fuel" };
-                        if (hasMeat) {
-                            hint.innerText = `[E] Дрова (${fireLevel}/5) | [G] Пожарить мясо | [T] Растопить снег (+вода)`;
-                        } else {
-                            hint.innerText = `[E] Подбросить дров (${fireLevel}/5) | [G] Жарить мясо | [T] Растопить снег (+вода)`;
-                        }
+                        this.interactionTarget = { type: "add_fuel", label: "ДРОВА", icon: "🪵" };
+                        const hasMeat = (p.inventory || []).some(i => i.id === "raw_meat");
+                        hintText = `[E] Дрова (${fireLevel}/5)` + (hasMeat ? " | [G] Пожарить мясо" : "") + " | [T] Растопить снег";
                     }
-                    hint.classList.add("visible");
-                    return;
                 }
             }
         }
 
         // SOS Clearing
-        if (roomType === "sos_clearing") {
-            if (this.gameState.sos_helicopter_landed) {
-                if (Math.hypot(p.x - 550, p.y - 160) < 110) {
-                    this.interactionTarget = { type: "board_sos_helicopter" };
-                    hint.innerText = "[E] Сесть в вертолет (Спасение!)";
-                    hint.classList.add("visible");
-                    return;
-                }
-            }
-            if (Math.hypot(p.x - 550, p.y - 310) < 120) {
+        if (!this.interactionTarget && roomType === "sos_clearing") {
+            if (this.gameState.sos_helicopter_landed && Math.hypot(p.x - 550, p.y - 160) < 110) {
+                this.interactionTarget = { type: "board_sos_helicopter", label: "ВЕРТОЛЁТ", icon: "🚁" };
+                hintText = "[E] Сесть в вертолет (Спасение!)";
+            } else if (Math.hypot(p.x - 550, p.y - 310) < 120) {
                 if (!this.gameState.sos_completed) {
-                    this.interactionTarget = { type: "contribute_sos" };
-                    hint.innerText = "[E] Выложить металлолом в знак SOS";
-                    hint.classList.add("visible");
-                    return;
+                    this.interactionTarget = { type: "contribute_sos", label: "SOS", icon: "🆘" };
+                    hintText = "[E] Выложить металлолом в знак SOS";
                 } else if (!this.gameState.sos_helicopter_landed) {
-                    hint.innerText = "Знак SOS выложен! Ждите поисковый вертолёт в лагере...";
-                    hint.classList.add("visible");
-                    return;
+                    hintText = "Знак SOS выложен! Ждите поисковый вертолёт в лагере...";
                 }
             }
         }
 
         // Radio Tower
-        if (roomType === "radio_tower") {
-            if (this.gameState.radio_helicopter_landed) {
-                if (Math.hypot(p.x - 280, p.y - 170) < 110) {
-                    this.interactionTarget = { type: "board_radio_helicopter" };
-                    hint.innerText = "[E] Сесть в вертолёт (Спасение!) 🚁";
-                    hint.classList.add("visible");
-                    return;
-                }
-            }
-            const distToDoor = Math.hypot(p.x - 550, p.y - 445);
-            const nearShack = (p.x >= 445 && p.x <= 655 && p.y >= 335 && p.y <= 495);
-            if (distToDoor < 85 || nearShack) {
-                if (!this.gameState.tower_breached) {
-                    this.interactionTarget = { type: "breach_tower" };
-                    hint.innerText = "[E] Срубить цепь топором и вскрыть дверь";
-                } else if (!this.gameState.radio_repaired) {
-                    this.interactionTarget = { type: "repair_radio" };
-                    hint.innerText = "[E] Настроить рацию (рация + 5 металла) и вызвать спасателей";
-                } else {
-                    this.interactionTarget = null;
-                    if (this.gameState.radio_helicopter_landed) {
-                        hint.innerText = "Спасательный вертолёт уже ждёт рядом на поляне!";
+        if (!this.interactionTarget && roomType === "radio_tower") {
+            if (this.gameState.radio_helicopter_landed && Math.hypot(p.x - 280, p.y - 170) < 110) {
+                this.interactionTarget = { type: "board_radio_helicopter", label: "ВЕРТОЛЁТ", icon: "🚁" };
+                hintText = "[E] Сесть в вертолёт (Спасение!) 🚁";
+            } else {
+                const distToDoor = Math.hypot(p.x - 550, p.y - 445);
+                const nearShack = (p.x >= 445 && p.x <= 655 && p.y >= 335 && p.y <= 495);
+                if (distToDoor < 85 || nearShack) {
+                    if (!this.gameState.tower_breached) {
+                        this.interactionTarget = { type: "breach_tower", label: "ВЗЛОМ", icon: "🪓" };
+                        hintText = "[E] Срубить цепь топором и вскрыть дверь";
+                    } else if (!this.gameState.radio_repaired) {
+                        this.interactionTarget = { type: "repair_radio", label: "РАДИО", icon: "📻" };
+                        hintText = "[E] Настроить рацию (рация + 5 металла) и вызвать спасателей";
                     } else {
-                        hint.innerText = "Сигнал передан в эфир! Ждите спасательный борт в лагере...";
+                        if (this.gameState.radio_helicopter_landed) {
+                            hintText = "Спасательный вертолёт уже ждёт рядом на поляне!";
+                        } else {
+                            hintText = "Сигнал передан в эфир! Ждите спасательный борт в лагере...";
+                        }
                     }
                 }
-                hint.classList.add("visible");
-                return;
             }
         }
 
         // Dropped Wood Logs on Ground
-        const items = this.groundItems[coordStr] || [];
-        for (let item of items) {
-            if (Math.hypot(p.x - item.x, p.y - item.y) < 45) {
-                this.interactionTarget = { type: "pickup_item", item_id: item.id };
-                hint.innerText = `[E] Подобрать: ${item.name}`;
-                hint.classList.add("visible");
-                return;
+        if (!this.interactionTarget) {
+            const items = this.groundItems[coordStr] || [];
+            for (let item of items) {
+                if (Math.hypot(p.x - item.x, p.y - item.y) < 45) {
+                    this.interactionTarget = { type: "pickup_item", item_id: item.id, label: "ВЗЯТЬ", icon: "🪵" };
+                    hintText = `[E] Подобрать: ${item.name}`;
+                    break;
+                }
             }
         }
 
-        hint.classList.remove("visible");
+        // Update interaction hint
+        if (hint) {
+            if (hintText) {
+                hint.innerText = hintText;
+                hint.classList.add("visible");
+            } else {
+                hint.classList.remove("visible");
+            }
+        }
+
+        // Campfire proximity & cooking status
+        const nearFire = (roomType === "camp") && Math.hypot(p.x - 570, p.y - 360) < 115;
+        const fireLit = this.gameState && this.gameState.campfire_built && (this.gameState.fire_level || 0) > 0;
+        const hasRawMeat = (p.inventory || []).some(i => i.id === "raw_meat");
+
+        // Update dynamic contextual mobile action buttons
+        this.updateMobileActionButtons(this.interactionTarget, nearFire && fireLit, hasRawMeat);
+    }
+
+    updateMobileActionButtons(target, nearLitFire, hasRawMeat) {
+        const btnInteract = document.getElementById("btn-touch-interact");
+        const interactLabel = document.getElementById("touch-interact-label");
+        const interactIcon = document.getElementById("touch-interact-icon");
+        const btnMelt = document.getElementById("btn-touch-melt");
+        const btnCook = document.getElementById("btn-touch-cook");
+        const rowSecondary = document.getElementById("action-row-secondary");
+
+        if (btnInteract) {
+            if (target) {
+                btnInteract.style.display = "flex";
+                if (interactLabel) interactLabel.innerText = target.label || "ДЕЙСТВ";
+                if (interactIcon) interactIcon.innerText = target.icon || "✋";
+            } else {
+                btnInteract.style.display = "none";
+            }
+        }
+
+        let showSecondary = false;
+        if (btnMelt) {
+            if (nearLitFire) {
+                btnMelt.style.display = "flex";
+                showSecondary = true;
+            } else {
+                btnMelt.style.display = "none";
+            }
+        }
+
+        if (btnCook) {
+            if (nearLitFire && hasRawMeat) {
+                btnCook.style.display = "flex";
+                showSecondary = true;
+            } else {
+                btnCook.style.display = "none";
+            }
+        }
+
+        if (rowSecondary) {
+            rowSecondary.style.display = showSecondary ? "flex" : "none";
+        }
     }
 
     triggerInteraction() {
@@ -1120,7 +1144,7 @@ class CrashGame {
         const container = document.getElementById("toast-container");
         if (!container) return;
 
-        while (container.children.length >= 3) {
+        while (container.children.length >= 2) {
             container.removeChild(container.firstChild);
         }
 
@@ -1130,7 +1154,7 @@ class CrashGame {
         container.appendChild(toast);
         setTimeout(() => {
             if (toast.parentNode) toast.remove();
-        }, 3500);
+        }, 3000);
     }
 
     copyRoomCode() {
